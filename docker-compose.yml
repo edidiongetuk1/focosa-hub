@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # User/Student API Service
+  focosa-user:
+    build:
+      context: .
+      dockerfile: Dockerfile.user
+    container_name: focosa-user-api
+    ports:
+      - "8000:8000"
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-focosa-super-secret-key-change-in-prod}
+      - USER_PORT=8000
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./focosa.db:/app/focosa.db
+      - ./focosa.db-shm:/app/focosa.db-shm
+      - ./focosa.db-wal:/app/focosa.db-wal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Admin API Service
+  focosa-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile.admin
+    container_name: focosa-admin-api
+    ports:
+      - "8001:8001"
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-focosa-super-secret-key-change-in-prod}
+      - ADMIN_PORT=8001
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./focosa.db:/app/focosa.db
+      - ./focosa.db-shm:/app/focosa.db-shm
+      - ./focosa.db-wal:/app/focosa.db-wal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - focosa-user
+
+volumes:
+  db-data:
+    driver: local
